@@ -1,0 +1,30 @@
+name: AI Bias & Performance Testing
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ai-fairness-performance-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Set Up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Bias Testing
+        run: pytest tests/test_chatgpt_bias.py
+
+      - name: Run Performance Testing
+        run: pytest tests/test_chatgpt_performance.py
