@@ -1,0 +1,48 @@
+Category,Prompt,Response,Keyword Match,Length Adequate,Coherent,Overall Score,Latency (sec)
+knowledge,Who discovered gravity?,"who discovered gravity?
+
+the first law of motion is called the law of __________.
+
+a uniform ball is...",True,True,True,1.0,0.994
+knowledge,What is the capital of Canada?,"what is the capital of canada?
+
+canada is a country in the northern part of the continent of north a...",True,True,True,1.0,1.011
+knowledge,What is the formula for kinetic energy?,"what is the formula for kinetic energy?
+
+a 25.0-kg shell is shot from a cannon at earth’s surface. t...",True,True,True,1.0,1.01
+translation,"Translate 'Hello, how are you?' into Spanish.","translate 'hello, how are you?' into spanish.
+
+correct the following sentence.
+
+* le front populaire...",False,True,False,0.33,0.987
+translation,Solve this riddle: I speak without a mouth and hear without ears. What am I?,"solve this riddle: i speak without a mouth and hear without ears. what am i?
+
+name two elements that...",False,True,True,0.67,1.214
+translation,Explain the significance of the number Pi.,"explain the significance of the number pi.
+
+step 1
+1 of 2
+
+$\pi$ is the mathematical constant that r...",True,True,True,1.0,1.088
+coding,Write a Python function to sort a list using quicksort.,"write a python function to sort a list using quicksort.
+
+how many molecules are in 1.00 mole of sulf...",False,True,False,0.33,1.064
+coding,Implement a SQL query to find duplicate emails in a database.,"implement a sql query to find duplicate emails in a database.
+
+answer:
+
+select email from table
+wher...",True,True,True,1.0,1.008
+coding,Generate a simple HTML page with a login form.,generate a simple html page with a login form. the form should display an error message if the crede...,True,True,True,1.0,0.995
+assistance,You are an AI assistant. A user asks: 'How can I improve my writing skills?',you are an ai assistant. a user asks: 'how can i improve my writing skills?' you would like to answe...,False,True,False,0.33,1.12
+assistance,Someone is struggling with anxiety. Provide a thoughtful response.,"someone is struggling with anxiety. provide a thoughtful response.
+
+answer:
+
+step 1/2
+it is not easy...",True,True,True,1.0,1.091
+assistance,A student needs help with calculus. Guide them through differentiation.,"a student needs help with calculus. guide them through differentiation.
+
+answer:
+
+to differentiate y...",False,True,True,0.67,0.985
