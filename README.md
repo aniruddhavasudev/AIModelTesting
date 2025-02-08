@@ -31,7 +31,7 @@ This **AI Model Testing Framework** evaluates **LLMs (Large Language Models)** l
 | Component        | Specification |
 |-----------------|--------------|
 | **CPU**         | AMD Ryzen 9 / Intel i7+ |
-| **GPU**         | NVIDIA RTX 3090 / Jetson Orin / A100 |
+| **GPU**         | Jetson AGX Orin 64GB |
 | **RAM**         | 32GB+ |
 | **Storage**     | 1TB SSD |
 | **OS**          | Ubuntu 20.04 / 22.04 |
