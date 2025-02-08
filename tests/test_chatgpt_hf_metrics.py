@@ -1,22 +1,28 @@
-import requests
 import time
 import pandas as pd
+import torch
+from transformers import pipeline
 from tqdm import tqdm
-import pytest  # Import the evaluation function
+import pytest
 
-# ✅ Hugging Face API Key (Replace with your actual key)
-HF_API_KEY = ""
 
-# ✅ Hugging Face API Endpoint (Use Gemma-2B or Mistral-7B)
-API_URL = "https://api-inference.huggingface.co/models/google/gemma-2b"
-# Alternative: API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1"
+# Check if CUDA (GPU) is available and set the device
+device = 0 if torch.cuda.is_available() else -1
+if device == 0:
+    print(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available. Using CPU.")
 
-# ✅ API Headers
-HEADERS = {
-    "Authorization": f"Bearer {HF_API_KEY}"
-}
+# Initialize the text generation pipeline with the desired model
+model_name = "deepseek-ai/deepseek-llm-7b-chat"  # Replace with your model
+generator = pipeline(
+    "text-generation",
+    model=model_name,
+    device=device,
+    torch_dtype=torch.float16 if device == 0 else torch.float32
+)
 
-# ✅ Evaluation Prompts Across Different Categories
+# Evaluation prompts across different categories
 evaluation_prompts = {
     "knowledge": [
         "Who discovered gravity?",
@@ -40,7 +46,7 @@ evaluation_prompts = {
     ]
 }
 
-# ✅ Expected Keywords and Evaluation Criteria
+# Expected keywords and evaluation criteria
 expected_keywords = {
     "knowledge": {
         "keywords": ["gravity", "newton", "law", "canada", "ottawa", "energy", "kinetic", "mass", "velocity"],
@@ -60,40 +66,26 @@ expected_keywords = {
     }
 }
 
-
-def query_huggingface(prompt):
-    """Send a request to Hugging Face API and retrieve model response."""
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_length": 150, "temperature": 0.7}
-    }
-
-    try:
-        start_time = time.time()
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        end_time = time.time()
-        response_time = round(end_time - start_time, 3)  # Latency in seconds
-
-        if response.status_code == 200:
-            response_data = response.json()
-            generated_text = response_data[0]["generated_text"]
-            return generated_text.lower(), response_time
-        elif response.status_code == 503:
-            print("🔄 Model is loading... Retrying in 30 seconds.")
-            time.sleep(30)  # Wait & retry
-            return query_huggingface(prompt)
-        else:
-            return f"API Error: {response.status_code} - {response.text}", response_time
-    except Exception as e:
-        return f"Request Failed: {e}", None
-
+def generate_text(prompt, max_length=150, temperature=0.7):
+    """Generate text using the local model."""
+    start_time = time.time()
+    response = generator(
+        prompt,
+        max_length=max_length,
+        temperature=temperature,
+        do_sample=True
+    )
+    end_time = time.time()
+    generated_text = response[0]["generated_text"]
+    latency = round(end_time - start_time, 3)
+    return generated_text, latency
 
 def evaluate_response(response, category):
     """Evaluate AI response based on keyword match, length, and coherence."""
     criteria = expected_keywords[category]
 
     # Check for keywords
-    keyword_match = any(keyword in response for keyword in criteria["keywords"])
+    keyword_match = any(keyword in response.lower() for keyword in criteria["keywords"])
 
     # Check response length
     words = response.split()
@@ -110,8 +102,7 @@ def evaluate_response(response, category):
         "overall_score": round(sum([keyword_match, length_adequate, coherent]) / 3, 2)
     }
 
-
-def run_evaluation():
+def test_run_evaluation():
     """Run AI evaluation across all prompt categories."""
     results = []
 
@@ -119,10 +110,10 @@ def run_evaluation():
         print(f"\n📌 Evaluating {category.upper()} category...")
 
         for prompt in tqdm(prompts, desc=f"🚀 Testing {category}"):
-            # Add delay to respect API rate limits
+            # Add delay to prevent potential issues with rapid requests
             time.sleep(1)
 
-            response, latency = query_huggingface(prompt)
+            response, latency = generate_text(prompt)
             evaluation = evaluate_response(response, category)
 
             results.append({
@@ -136,14 +127,14 @@ def run_evaluation():
                 "Latency (sec)": latency
             })
 
-    # ✅ Create DataFrame and Calculate Metrics
+    # Create DataFrame and Calculate Metrics
     df = pd.DataFrame(results)
 
-    # ✅ Print Detailed Results
+    # Print Detailed Results
     print("\n=== 📊 Evaluation Results ===")
     print(df)
 
-    # ✅ Calculate Summary Statistics
+    # Calculate Summary Statistics
     print("\n=== 📈 Summary Statistics ===")
     summary = df.groupby("Category").agg({
         "Overall Score": ["mean", "std"],
@@ -154,17 +145,12 @@ def run_evaluation():
     })
     print(summary)
 
-    # ✅ Save Results to CSV
-    df.to_csv("huggingface_evaluation_results.csv", index=False)
-    print("\n💾 Results saved to huggingface_evaluation_results.csv")
-
-def test_evaluation_runs_without_errors():
-    """Ensure the evaluation runs successfully without crashing."""
-    try:
-        run_evaluation()  # ✅ Call your evaluation function
-        assert True  # ✅ If no errors, pass the test
-    except Exception as e:
-        pytest.fail(f"Evaluation failed due to: {e}")
+    # Save Results to CSV
+    timestamp = time.strftime("%Y%m%d-%H%M%S")
+    csv_filename = f"/home/rptech/ani_env/AIModelTesting/huggingface_evaluation_results.csv"
+    df.to_csv(csv_filename, index=False)
+    print(f"\n💾 Results saved to {csv_filename}")
 
 if __name__ == "__main__":
-    test_evaluation_runs_without_errors()
+    test_run_evaluation()
+

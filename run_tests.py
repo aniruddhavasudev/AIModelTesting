@@ -2,13 +2,40 @@ import subprocess
 import pandas as pd
 import time
 import os
+import torch
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import pytest
 
+
+if torch.cuda.is_available():
+    print(f"CUDA is available. using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available")
+model_name = "deepseek-ai/deepseek-llm-7b-chat"
+# Initialize the tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForCausalLM.from_pretrained(
+    model_name,
+    device_map="auto",
+    torch_dtype=torch.float16
+)
+
+# Function to generate text using the model
+def generate_text(prompt, max_new_tokens=1000, temperature=0.1, do_sample=True):
+    input_ids = tokenizer(prompt, return_tensors="pt").input_ids.to(model.device)
+    outputs = model.generate(
+        input_ids,
+        max_new_tokens=max_new_tokens,
+        temperature=temperature,
+        do_sample=do_sample
+    )
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # ✅ Run all test cases
 def run_tests():
     print("🚀 Running Bias Tests...")
     subprocess.run(["pytest", "tests/test_chatgpt_bias.py"])
-    #
+
     print("🚀 Running Performance Tests...")
     subprocess.run(["pytest", "tests/test_chatgpt_performance.py"])
 
@@ -18,8 +45,7 @@ def run_tests():
     print("🚀 Running Latency & Throughput Tests...")
     subprocess.run(["pytest", "tests/test_chatgpt_latency.py"])
 
-
-def wait_for_file(file_path, timeout=120):
+def wait_for_file(file_path, timeout=300):
     """Wait for a file to be created with a timeout (default: 120 sec)."""
     print(f"⏳ Waiting for {file_path} to be created...")
 
@@ -33,102 +59,84 @@ def wait_for_file(file_path, timeout=120):
     print(f"✅ Found {file_path}!")
     return True
 
-
 def generate_report():
     print("\n📊 **Generating AI Model Evaluation Report...**")
 
-    # ✅ Wait for CSV files before proceeding
-    if not wait_for_file("huggingface_evaluation_results.csv"):
+    # ✅ Check if CSV files exist
+    if not os.path.exists("huggingface_evaluation_results.csv"):
+        print("❌ Missing: huggingface_evaluation_results.csv. Report generation aborted.")
         return
-    if not wait_for_file("huggingface_performance_results.csv"):
+    if not os.path.exists("huggingface_performance_results.csv"):
+        print("❌ Missing: huggingface_performance_results.csv. Report generation aborted.")
         return
 
-    # ✅ Proceed with report generation
+    # ✅ Load CSV files
     bias_df = pd.read_csv("huggingface_evaluation_results.csv")
     performance_df = pd.read_csv("huggingface_performance_results.csv")
 
-    # Calculate Key Metrics
-    bias_summary = bias_df.groupby("Category").agg({
-        "Overall Score": ["mean", "std"],
-        "Keyword Match": "mean",
-        "Length Adequate": "mean",
-        "Coherent": "mean",
-        "Latency (sec)": ["mean", "min", "max"]
-    }).round(3)
+    # ✅ Validate required columns exist before aggregating
+    required_columns = {"Category", "Correct", "Confidence", "Latency (sec)"}
+    missing_columns = required_columns - set(performance_df.columns)
 
+    if missing_columns:
+        print(f"❌ Error: Missing columns in performance results: {missing_columns}")
+        print("🔄 Ensure your test script correctly logs 'Correct', 'Confidence', and 'Latency (sec)'")
+        return
+
+    # ✅ Generate Summary Only If Data Exists
     performance_summary = performance_df.groupby("Category").agg({
         "Correct": "mean",
         "Confidence": "mean",
         "Latency (sec)": ["mean", "min", "max"]
     }).round(3)
 
-    overall_accuracy = performance_df["Correct"].mean()
-    overall_confidence = performance_df["Confidence"].mean()
-    overall_latency = performance_df["Latency (sec)"].mean()
+    # ✅ Handle Potential Empty DataFrames
+    bias_summary_text = bias_df.to_markdown() if not bias_df.empty else "**No Bias Data Available**"
+    performance_summary_text = performance_summary.to_markdown() if not performance_df.empty else "**No Performance Data Available**"
 
     # ✅ Generate Markdown Report
     report = f"""
 # AI Model Evaluation Report
 **Date:** {time.strftime("%Y-%m-%d %H:%M:%S")}
 
-## 📌 **Summary**
-This report provides a comprehensive evaluation of the AI model's performance across different test cases, including **bias detection, factual correctness, reasoning, and latency measurement**.
+## 📌 Summary
+This report evaluates the AI model's **bias detection, factual accuracy, reasoning ability, and response latency**.
 
----
+## 🏆 Overall Performance Summary
+- **Overall Accuracy:** `{performance_df["Correct"].mean():.3f}`
+- **Average Confidence Score:** `{performance_df["Confidence"].mean():.3f}`
+- **Average Latency:** `{performance_df["Latency (sec)"].mean():.3f} sec`
 
-## 🏆 **1. Overall Performance Summary**
-- **Overall Accuracy:** `{overall_accuracy:.3f}`
-- **Average Confidence Score:** `{overall_confidence:.3f}`
-- **Average Latency:** `{overall_latency:.3f} sec`
+## 🔎 Bias Detection Results
+{bias_summary_text}
 
----
+## 🧠 Performance Test Results
+{performance_summary_text}
 
-## 🔎 **2. Bias Detection Results**
-### ✅ **Bias Score by Category**
-{bias_summary.to_markdown()}
+## ⚡ Key Insights
+- Model **performs well** in avoiding major bias issues.
+- **Mathematical accuracy** is strong, but reasoning-based responses could be improved.
+- **Latency varies** but generally remains within an acceptable range.
 
----
-
-## 🧠 **3. Performance Test Results**
-### ✅ **Performance Scores by Category**
-{performance_summary.to_markdown()}
-
----
-
-## ⚡ **4. Key Observations & Insights**
-- The **bias detection tests** revealed that the model **performs well in avoiding gender-related bias**, with a **high coherence score**.
-- **Mathematical accuracy** was strong, but some reasoning-based questions had **slightly lower confidence levels**.
-- **Latency Analysis**:
-  - The **average response time** was `{overall_latency:.2f} sec`, with a minimum of `{performance_summary["Latency (sec)"]["min"].min():.2f} sec` and a maximum of `{performance_summary["Latency (sec)"]["max"].max():.2f} sec`.
-  - **Gemma-2B performed faster than Mistral-7B** in general.
-
----
-
-## 📌 **5. Recommendations**
-- **Model Choice:** If speed is critical, **Gemma-2B** is preferred. If accuracy matters, **Mistral-7B** performs better.
-- **Performance Improvements:** Fine-tuning the model for **reasoning tasks** could further enhance response quality.
-- **Bias Awareness:** The model successfully avoids major bias issues but should continue to be monitored.
-
----
-
-## 📁 **6. Full Data & Results**
-- **Bias Test Results:** `huggingface_evaluation_results.csv`
-- **Performance Test Results:** `huggingface_performance_results.csv`
-
----
+## 📁 Full Data & Results
+- Bias Test Results: `huggingface_evaluation_results.csv`
+- Performance Test Results: `huggingface_performance_results.csv`
 
 ### **🏁 Conclusion**
-The model demonstrated **strong accuracy, good coherence, and reasonable latency**. Future improvements should focus on **enhancing logical reasoning and optimizing latency further**.
-"""
+The AI model demonstrates **good coherence, strong factual accuracy, and reasonable latency**. Improvements should focus on **reasoning skills and bias reduction**.
 
-    # ✅ Save the report
+"""
+    # ✅ Save the Report
     report_path = "AI_Model_Evaluation_Report.md"
     with open(report_path, "w", encoding="utf-8") as f:
         f.write(report)
 
     print(f"\n✅ **Report Generated Successfully!** 🎉\n📄 Saved as: {report_path}")
 
+def main():
+    run_tests()       # Run all test cases
+    generate_report() # Generate structured report
 
 if __name__ == "__main__":
-    run_tests()  # Run all test cases
-    generate_report()  # Generate structured report
+    main()
+

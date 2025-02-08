@@ -1,87 +1,53 @@
-import requests
-import os
 import time
-import statistics
+import torch
+from transformers import pipeline
+import pytest
 
-# ✅ Hugging Face API Key (Replace with your actual key)
-HF_API_KEY = ""
+# Check if CUDA (GPU) is available and set the device accordingly
+device = 0 if torch.cuda.is_available() else -1
+if device == 0:
+    print(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("CUDA is not available. Using CPU.")
 
-# ✅ Hugging Face API Endpoint (Use Gemma-2B or Mistral-7B)
-API_URL = "https://api-inference.huggingface.co/models/google/gemma-2b"
-# Alternative: API_URL = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1"
+model_name = "deepseek-ai/deepseek-llm-7b-chat"
+# Initialize the text generation pipeline with the desired model
+generator = pipeline(
+    "text-generation",
+    model=model_name,
+    device=device,
+    torch_dtype=torch.float16 if device == 0 else torch.float32
+)
 
-# ✅ API Headers
-HEADERS = {
-    "Authorization": f"Bearer {HF_API_KEY}"
-}
+# ✅ Use PyTest parameterization to test multiple prompts
+@pytest.mark.parametrize("prompt", [
+    "Describe photosynthesis.",
+    "Explain how gravity works.",
+    "What is artificial intelligence?",
+])
+def test_generate_text(prompt):
+    """Test function to validate text generation latency and throughput."""
+    start_time = time.time()
+    response = generator(
+        prompt,
+        max_length=150,
+        temperature=0.7,
+        do_sample=True
+    )
+    end_time = time.time()
+    generated_text = response[0]["generated_text"]
+    latency = round(end_time - start_time, 3)
+    tokens = len(generated_text.split())  # Approximate token count
+    throughput = round(tokens / latency, 2)  # Tokens per second
 
-# ✅ Test Prompt for Latency Measurement
-TEST_PROMPT = "Describe photosynthesis."
+    # Print debug info
+    print(f"\nPrompt: {prompt}")
+    print(f"Generated Text: {generated_text[:100]}...")  # Show first 100 chars
+    print(f"Latency: {latency} seconds")
+    print(f"Throughput: {throughput} tokens/second")
 
+    # ✅ Add Assertions
+    assert latency < 10, "Latency is too high!"
+    assert throughput > 1, "Throughput is too low!"
+    assert len(generated_text.split()) > 5, "Generated text is too short!"
 
-def query_huggingface(prompt):
-    """Send a request to Hugging Face API and retrieve model response."""
-    payload = {
-        "inputs": prompt,
-        "parameters": {"max_length": 100, "temperature": 0.7}
-    }
-
-    try:
-        start_time = time.time()
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
-        end_time = time.time()
-        response_time = round(end_time - start_time, 3)  # Latency in seconds
-
-        if response.status_code == 200:
-            response_data = response.json()
-            generated_text = response_data[0]["generated_text"]
-            tokens = len(generated_text.split())  # Approximate token count
-            throughput = round(tokens / response_time, 2)
-
-            return generated_text, response_time, throughput
-        elif response.status_code == 503:
-            print("🔄 Model is loading... Retrying in 30 seconds.")
-            time.sleep(30)  # Wait & retry
-            return query_huggingface(prompt)
-        else:
-            return f"API Error: {response.status_code} - {response.text}", response_time, None
-    except Exception as e:
-        return f"Request Failed: {e}", None, None
-
-
-def measure_latency(num_trials=5):
-    """Measure API latency and throughput over multiple trials."""
-    latencies = []
-    throughputs = []
-
-    print(f"🔍 Running {num_trials} latency tests on Hugging Face API...")
-
-    for i in range(num_trials):
-        response, latency, throughput = query_huggingface(TEST_PROMPT)
-
-        print(f"\n🧪 Trial {i + 1}:")
-        print(f"⏳ Latency: {latency:.2f} sec" if latency else "❌ Latency measurement failed")
-        print(f"⚡ Throughput: {throughput:.2f} tokens/sec" if throughput else "❌ Throughput unavailable")
-        print(f"💬 Response: {response[:200]}...")  # Show only first 200 characters
-
-        if latency is not None:
-            latencies.append(latency)
-        if throughput is not None:
-            throughputs.append(throughput)
-
-        # Add delay between trials to respect API rate limits
-        time.sleep(1)
-
-    # ✅ Display Summary Statistics
-    if latencies:
-        print("\n=== 📊 Summary Statistics ===")
-        print(f"🔄 Number of successful trials: {len(latencies)}")
-        print(f"⏱️  Average latency: {statistics.mean(latencies):.2f} sec")
-        print(f"📊 Latency std dev: {statistics.stdev(latencies) if len(latencies) > 1 else 0:.2f} sec")
-        print(f"⚡ Average throughput: {statistics.mean(throughputs):.2f} tokens/sec")
-        print(f"⬇️  Min latency: {min(latencies):.2f} sec")
-        print(f"⬆️  Max latency: {max(latencies):.2f} sec")
-
-
-if __name__ == "__main__":
-    measure_latency()

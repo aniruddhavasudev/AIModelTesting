@@ -1,48 +1,27 @@
 Category,Prompt,Response,Keyword Match,Length Adequate,Coherent,Overall Score,Latency (sec)
-knowledge,Who discovered gravity?,"who discovered gravity?
+knowledge,Who discovered gravity?,"Who discovered gravity?
+Einstein (Albert Einstein) discovered gravity. He proposed the theory of gen...",True,True,True,1.0,8.74
+knowledge,What is the capital of Canada?,"What is the capital of Canada?
+Canada’s capital is Ottawa, which is also the capital city of Ontario...",True,True,True,1.0,10.293
+knowledge,What is the formula for kinetic energy?,"What is the formula for kinetic energy?
+Newton's law of cooling states that the rate of cooling of a...",True,True,True,1.0,14.434
+translation,"Translate 'Hello, how are you?' into Spanish.","Translate 'Hello, how are you?' into Spanish. Hola, ¿cómo estás?
+Discover more smart definitions exp...",True,True,True,1.0,2.758
+translation,Solve this riddle: I speak without a mouth and hear without ears. What am I?,"Solve this riddle: I speak without a mouth and hear without ears. What am I?
 
-the first law of motion is called the law of __________.
+A: The answer to this ...",False,True,True,0.67,3.605
+translation,Explain the significance of the number Pi.,Explain the significance of the number Pi.Pi is the ratio of the circumference of a circle to its di...,True,True,True,1.0,14.633
+coding,Write a Python function to sort a list using quicksort.,Write a Python function to sort a list using quicksort. Recursively applying quicksort on the list u...,True,True,True,1.0,14.237
+coding,Implement a SQL query to find duplicate emails in a database.,Implement a SQL query to find duplicate emails in a database. Duplicate emails should be determined ...,True,True,True,1.0,13.556
+coding,Generate a simple HTML page with a login form.,"Generate a simple HTML page with a login form. XHTML is a simple markup language.
 
-a uniform ball is...",True,True,True,1.0,3.344
-knowledge,What is the capital of Canada?,"what is the capital of canada?
+```html
+<!DOCTYPE...",True,True,True,1.0,15.313
+assistance,You are an AI assistant. A user asks: 'How can I improve my writing skills?',"You are an AI assistant. A user asks: 'How can I improve my writing skills?'
 
-canada is a country in the northern part of the continent of north a...",True,True,True,1.0,5.146
-knowledge,What is the formula for kinetic energy?,"what is the formula for kinetic energy?
+As an AI assistant, I ...",True,True,False,0.67,14.214
+assistance,Someone is struggling with anxiety. Provide a thoughtful response.,"Someone is struggling with anxiety. Provide a thoughtful response.
+Anxiety is a common mental health...",False,True,False,0.33,14.82
+assistance,A student needs help with calculus. Guide them through differentiation.,"A student needs help with calculus. Guide them through differentiation.
 
-a 25.0-kg shell is shot from a cannon at earth’s surface. t...",True,True,True,1.0,4.507
-translation,"Translate 'Hello, how are you?' into Spanish.","translate 'hello, how are you?' into spanish.
-
-correct the following sentence.
-
-* le front populaire...",False,True,False,0.33,2.757
-translation,Solve this riddle: I speak without a mouth and hear without ears. What am I?,"solve this riddle: i speak without a mouth and hear without ears. what am i?
-
-name two elements that...",False,True,True,0.67,6.46
-translation,Explain the significance of the number Pi.,"explain the significance of the number pi.
-
-step 1
-1 of 2
-
-$\pi$ is the mathematical constant that r...",True,True,True,1.0,1.913
-coding,Write a Python function to sort a list using quicksort.,"write a python function to sort a list using quicksort.
-
-how many molecules are in 1.00 mole of sulf...",False,True,False,0.33,3.691
-coding,Implement a SQL query to find duplicate emails in a database.,"implement a sql query to find duplicate emails in a database.
-
-answer:
-
-select email from table
-wher...",True,True,True,1.0,2.673
-coding,Generate a simple HTML page with a login form.,generate a simple html page with a login form. the form should display an error message if the crede...,True,True,True,1.0,6.47
-assistance,You are an AI assistant. A user asks: 'How can I improve my writing skills?',you are an ai assistant. a user asks: 'how can i improve my writing skills?' you would like to answe...,False,True,False,0.33,6.275
-assistance,Someone is struggling with anxiety. Provide a thoughtful response.,"someone is struggling with anxiety. provide a thoughtful response.
-
-answer:
-
-step 1/2
-it is not easy...",True,True,True,1.0,3.119
-assistance,A student needs help with calculus. Guide them through differentiation.,"a student needs help with calculus. guide them through differentiation.
-
-answer:
-
-to differentiate y...",False,True,True,0.67,4.507
+Differentiation is the proc...",True,True,False,0.67,14.542
